@@ -204,6 +204,15 @@
             pointer-events: none;
         }
 
+        .transition-indicator {
+            height: 3px;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            border-radius: 2px;
+            margin-top: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
         @media (max-width: 480px) {
             .player {
                 padding: 20px;
@@ -245,6 +254,8 @@
             </select>
         </div>
         
+        <div class="transition-indicator" id="transition-indicator"></div>
+        
         <div class="player__controls">
             <label class="player__label">
                 <span class="player__timerText">Таймер:</span>
@@ -275,11 +286,15 @@
         class RelaxPlayer {
             constructor() {
                 this.audio = new Audio();
+                this.nextAudio = new Audio(); // Для плавных переходов
                 this.isPlaying = false;
                 this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 this.currentSound = null;
+                this.nextSound = null;
                 this.timer = null;
                 this.volume = 0.5;
+                this.fadeDuration = 2000; // Длительность перехода в миллисекундах
+                this.isTransitioning = false;
                 
                 this.initElements();
                 this.bindEvents();
@@ -297,6 +312,7 @@
                 this.volumeBtn = document.querySelector('.player__volumeOnOff');
                 this.volumeSlider = document.querySelector('.player__volume');
                 this.iosWarning = document.getElementById('ios-warning');
+                this.transitionIndicator = document.getElementById('transition-indicator');
             }
             
             bindEvents() {
@@ -316,12 +332,19 @@
                 this.audio.addEventListener('loadeddata', () => this.onAudioLoaded());
                 this.audio.addEventListener('error', (e) => this.onAudioError(e));
                 this.audio.addEventListener('ended', () => this.onAudioEnded());
+                
+                this.nextAudio.addEventListener('loadeddata', () => this.onNextAudioLoaded());
+                this.nextAudio.addEventListener('error', (e) => this.onNextAudioError(e));
             }
             
             setupAudio() {
                 this.audio.loop = true;
                 this.audio.volume = this.volume;
                 this.audio.preload = 'auto';
+                
+                this.nextAudio.loop = true;
+                this.nextAudio.volume = 0;
+                this.nextAudio.preload = 'auto';
                 
                 // Загружаем первый звук
                 this.changeSound();
@@ -343,9 +366,9 @@
                 
                 try {
                     if (this.isPlaying) {
-                        this.pause();
+                        await this.fadeOutAndStop();
                     } else {
-                        await this.play();
+                        await this.fadeInAndPlay();
                     }
                 } catch (error) {
                     console.error('Ошибка воспроизведения:', error);
@@ -355,23 +378,133 @@
                 }
             }
             
-            async play() {
-                // Для iOS важно, чтобы воспроизведение начиналось по жесту
-                await this.audio.play();
-                this.isPlaying = true;
-                this.playPauseBtn.classList.add('playing');
-            }
-            
-            pause() {
-                this.audio.pause();
-                this.isPlaying = false;
-                this.playPauseBtn.classList.remove('playing');
-            }
-            
-            changeSound() {
-                const soundKey = this.dropdown.value;
-                this.currentSound = soundKey;
+            async fadeInAndPlay() {
+                if (this.isTransitioning) return;
                 
+                this.isTransitioning = true;
+                this.showTransitionIndicator();
+                
+                try {
+                    await this.audio.play();
+                    
+                    // Плавное увеличение громкости
+                    await this.fadeAudio(this.audio, 0, this.volume, this.fadeDuration / 2);
+                    
+                    this.isPlaying = true;
+                    this.playPauseBtn.classList.add('playing');
+                } catch (error) {
+                    console.error('Ошибка при fadeIn:', error);
+                } finally {
+                    this.isTransitioning = false;
+                    this.hideTransitionIndicator();
+                }
+            }
+            
+            async fadeOutAndStop() {
+                if (this.isTransitioning) return;
+                
+                this.isTransitioning = true;
+                this.showTransitionIndicator();
+                
+                try {
+                    // Плавное уменьшение громкости
+                    await this.fadeAudio(this.audio, this.volume, 0, this.fadeDuration / 2);
+                    
+                    this.audio.pause();
+                    this.isPlaying = false;
+                    this.playPauseBtn.classList.remove('playing');
+                } catch (error) {
+                    console.error('Ошибка при fadeOut:', error);
+                } finally {
+                    this.isTransitioning = false;
+                    this.hideTransitionIndicator();
+                }
+            }
+            
+            async changeSound() {
+                const soundKey = this.dropdown.value;
+                
+                if (this.isPlaying) {
+                    // Если воспроизведение активно, делаем плавный переход
+                    await this.crossfadeToNewSound(soundKey);
+                } else {
+                    // Если не активно, просто загружаем новый звук
+                    this.currentSound = soundKey;
+                    this.loadAudio(this.audio, this.getSoundUrl(soundKey));
+                }
+            }
+            
+            async crossfadeToNewSound(newSoundKey) {
+                if (this.isTransitioning) return;
+                
+                this.isTransitioning = true;
+                this.showTransitionIndicator();
+                this.nextSound = newSoundKey;
+                
+                try {
+                    // Загружаем новый звук во второй аудиоэлемент
+                    this.loadAudio(this.nextAudio, this.getSoundUrl(newSoundKey));
+                    await this.nextAudio.play();
+                    
+                    // Кроссфейд: уменьшаем громкость текущего, увеличиваем нового
+                    const fadePromises = [
+                        this.fadeAudio(this.audio, this.volume, 0, this.fadeDuration),
+                        this.fadeAudio(this.nextAudio, 0, this.volume, this.fadeDuration)
+                    ];
+                    
+                    await Promise.all(fadePromises);
+                    
+                    // Меняем местами аудиоэлементы
+                    [this.audio, this.nextAudio] = [this.nextAudio, this.audio];
+                    this.currentSound = this.nextSound;
+                    
+                    // Сбрасываем nextAudio для следующего перехода
+                    this.nextAudio.pause();
+                    this.nextAudio.currentTime = 0;
+                    this.nextAudio.volume = 0;
+                    
+                } catch (error) {
+                    console.error('Ошибка при кроссфейде:', error);
+                } finally {
+                    this.isTransitioning = false;
+                    this.hideTransitionIndicator();
+                }
+            }
+            
+            fadeAudio(audioElement, startVolume, endVolume, duration) {
+                return new Promise((resolve) => {
+                    const startTime = performance.now();
+                    const initialVolume = audioElement.volume;
+                    
+                    const animateFade = (currentTime) => {
+                        const elapsed = currentTime - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        
+                        // Кубическая easing функция для плавности
+                        const easeProgress = progress < 0.5 
+                            ? 4 * progress * progress * progress 
+                            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                        
+                        audioElement.volume = initialVolume + (endVolume - initialVolume) * easeProgress;
+                        
+                        if (progress < 1) {
+                            requestAnimationFrame(animateFade);
+                        } else {
+                            audioElement.volume = endVolume;
+                            resolve();
+                        }
+                    };
+                    
+                    requestAnimationFrame(animateFade);
+                });
+            }
+            
+            loadAudio(audioElement, url) {
+                audioElement.src = url;
+                audioElement.volume = this.volume;
+            }
+            
+            getSoundUrl(soundKey) {
                 // В реальном приложении здесь будут настоящие URL аудиофайлов
                 const soundUrls = {
                     'rain_in_the_forest': 'sounds/rain_in_the_forest.mp3',
@@ -388,15 +521,16 @@
                     'in_the_cafe': 'sounds/in_the_cafe.mp3'
                 };
                 
-                this.audio.src = soundUrls[soundKey];
-                
-                if (this.isPlaying) {
-                    this.audio.play().catch(e => {
-                        console.log('Автоматическое воспроизведение заблокировано');
-                        this.isPlaying = false;
-                        this.playPauseBtn.classList.remove('playing');
-                    });
-                }
+                // Используем демо-звуки (в реальном приложении замените на свои файлы)
+                return soundUrls[soundKey] || 'sounds/rain_in_the_forest.mp3';
+            }
+            
+            showTransitionIndicator() {
+                this.transitionIndicator.style.width = '100%';
+            }
+            
+            hideTransitionIndicator() {
+                this.transitionIndicator.style.width = '0%';
             }
             
             setTimer() {
@@ -404,8 +538,8 @@
                 this.clearTimer();
                 
                 if (minutes > 0) {
-                    this.timer = setTimeout(() => {
-                        this.pause();
+                    this.timer = setTimeout(async () => {
+                        await this.fadeOutAndStop();
                         this.timerSelect.value = '0';
                         alert(`Таймер сработал! Воспроизведение остановлено.`);
                     }, minutes * 60 * 1000);
@@ -421,6 +555,7 @@
             
             toggleMute() {
                 this.audio.muted = !this.audio.muted;
+                this.nextAudio.muted = !this.nextAudio.muted;
                 this.volumeBtn.classList.toggle('muted', this.audio.muted);
                 
                 if (this.audio.muted) {
@@ -432,7 +567,10 @@
             
             setVolume(value) {
                 this.volume = value / 100;
-                this.audio.volume = this.volume;
+                if (!this.audio.muted) {
+                    this.audio.volume = this.volume;
+                    this.nextAudio.volume = 0; // nextAudio всегда на 0, кроме переходов
+                }
                 
                 // Сохраняем громкость в localStorage
                 localStorage.setItem('relaxPlayerVolume', value);
@@ -442,9 +580,17 @@
                 console.log('Аудио загружено:', this.currentSound);
             }
             
+            onNextAudioLoaded() {
+                console.log('Следующее аудио загружено:', this.nextSound);
+            }
+            
             onAudioError(e) {
                 console.error('Ошибка загрузки аудио:', e);
                 alert('Ошибка загрузки звука. Попробуйте другой вариант.');
+            }
+            
+            onNextAudioError(e) {
+                console.error('Ошибка загрузки следующего аудио:', e);
             }
             
             onAudioEnded() {
