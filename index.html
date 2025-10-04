@@ -386,10 +386,10 @@ class RelaxPlayer {
     }
 
     changeSound() {
-        const soundKey = this.dropdown.value;
-        this.currentSound = soundKey;
+    const soundKey = this.dropdown.value;
+    this.currentSound = soundKey;
 
-        const soundUrls = {
+    const soundUrls = {
                     'rain_in_the_forest': 'sounds/rain_in_the_forest.mp3',
                     'the_sound_of_rain': 'sounds/the_sound_of_rain.mp3',
                     'glucophone': 'sounds/Glucophone_(sleep_melody)_01.mp3',
@@ -404,17 +404,20 @@ class RelaxPlayer {
                     'in_the_cafe': 'sounds/in_the_cafe.mp3'
                 };
 
-        const newUrl = soundUrls[soundKey];
+    const newUrl = soundUrls[soundKey];
 
-        if (this.isPlaying) {
-            this.fadeOut(() => {
-                this.audio.src = newUrl;
-                this.audio.play().then(() => this.fadeIn());
-            });
-        } else {
+    if (this.isPlaying) {
+        // Плавный переход: сначала затухание старого трека
+        this.fadeOut(() => {
             this.audio.src = newUrl;
-        }
+            this.audio.currentTime = 0;
+            this.audio.play().then(() => this.fadeIn());
+        });
+    } else {
+        this.audio.src = newUrl;
     }
+}
+
 
     // === ДОБАВЛЕННЫЕ МЕТОДЫ ДЛЯ ЗАТУХАНИЯ ===
     fadeIn() {
