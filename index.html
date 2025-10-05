@@ -406,8 +406,7 @@
                 if (minutes > 0) {
                     this.timer = setTimeout(() => {
                         this.pause();
-                        this.timerSelect.value = '0';
-                        alert(`Таймер сработал! Воспроизведение остановлено.`);
+                        this.timerSelect.value = '0';                        
                     }, minutes * 60 * 1000);
                 }
             }
