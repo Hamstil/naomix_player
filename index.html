@@ -391,11 +391,7 @@
                 this.audio.src = soundUrls[soundKey];
                 
                 if (this.isPlaying) {
-                    this.audio.play().catch(e => {
-                        console.log('Автоматическое воспроизведение заблокировано');
-                        this.isPlaying = false;
-                        this.playPauseBtn.classList.remove('playing');
-                    });
+                    this.pause();
                 }
             }
             
