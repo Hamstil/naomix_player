@@ -1,482 +1,77 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Плеер релакс-звуков</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .player {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .player__buttonPlayPause {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: none;
-            background: #4CAF50;
-            cursor: pointer;
-            margin: 0 auto 30px;
-            display: block;
-            position: relative;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-        }
-
-        .player__buttonPlayPause:hover {
-            transform: scale(1.05);
-            background: #45a049;
-        }
-
-        .player__buttonPlayPause::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-40%, -50%);
-            width: 0;
-            height: 0;
-            border-left: 20px solid white;
-            border-top: 12px solid transparent;
-            border-bottom: 12px solid transparent;
-        }
-
-        .player__buttonPlayPause.playing::before {
-            width: 8px;
-            height: 25px;
-            border: none;
-            background: white;
-            transform: translate(-50%, -50%);
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-        }
-
-        .player__buttonPlayPause.playing::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(50%, -50%);
-            width: 8px;
-            height: 25px;
-            background: white;
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-        }
-
-        .player__select {
-            display: flex;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            gap: 12px;
-        }
-
-        .player__icon-eq {
-            width: 24px;
-            height: 24px;
-            opacity: 0.7;
-        }
-
-        .player__line {
-            width: 1px;
-            height: 30px;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .player__dropdown {
-            flex: 1;
-            border: none;
-            background: transparent;
-            font-size: 16px;
-            color: #333;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .player__controls {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .player__label {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 14px;
-            color: #333;
-        }
-
-        .player__timerText {
-            min-width: 70px;
-        }
-
-        .player__timer {
-            flex: 1;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            padding: 8px 12px;
-            background: white;
-            cursor: pointer;
-            outline: none;
-        }
-
-        .player__volumeOnOff {
-            width: 24px;
-            height: 24px;
-            border: none;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>') no-repeat center;
-            background-size: contain;
-            cursor: pointer;
-            transition: opacity 0.3s;
-        }
-
-        .player__volumeOnOff.muted {
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>') no-repeat center;
-            background-size: contain;
-        }
-
-        .player__volume {
-            flex: 1;
-            height: 4px;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 2px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .player__volume::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #4CAF50;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .player__volume::-webkit-slider-thumb:hover {
-            background: #45a049;
-            transform: scale(1.1);
-        }
-
-        .player__label_disabled .player__volume {
-            opacity: 0.5;
-        }
-
-        .ios-warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 15px;
-            font-size: 14px;
-            text-align: center;
-            display: none;
-        }
-
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
-        @media (max-width: 480px) {
-            .player {
-                padding: 20px;
-            }
-            
-            .player__buttonPlayPause {
-                width: 60px;
-                height: 60px;
-                margin-bottom: 25px;
-            }
-            
-            .player__select {
-                padding: 12px;
-            }
-        }
-    </style>
-</head>
-<body>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
     <section class="player">
-        <button class="player__buttonPlayPause" aria-label="Воспроизвести/пауза"></button>
-        
-        <div class="player__select">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23333'%3E%3Cpath d='M10 20h4V4h-4v16zm-6 0h4v-8H4v8zM16 9v11h4V9h-4z'/%3E%3C/svg%3E" 
-                 alt="Иконка эквалайзера" class="player__icon-eq">
-            <div class="player__line"></div>
-            <select class="player__dropdown" aria-label="Выбор звука">
-                <option value="rain_in_the_forest">Дождь в лесу</option>
-                <option value="the_sound_of_rain">Шум дождя</option>
-                <option value="glucophone">Глюкофон</option>
-                <option value="the_fire_in_the_oven">Огонь в печи</option>
-                <option value="fire_in_the_street">Огонь на улице</option>
-                <option value="the_noise_of_the_forest">Шум леса</option>
-                <option value="wave_noise">Шум волны</option>
-                <option value="the_sound_of_the_sea">Шум моря</option>
-                <option value="the_sound_of_the_spring">Звук родника</option>
-                <option value="crickets">Сверчки</option>
-                <option value="cicadas">Цикады</option>
-                <option value="in_the_cafe">В кафе</option>
-            </select>
-        </div>
-        
-        <div class="player__controls">
-            <label class="player__label">
-                <span class="player__timerText">Таймер:</span>
-                <select class="player__timer">
-                    <option value="0">Без таймера</option>
-                    <option value="5">5 минут</option>
-                    <option value="10">10 минут</option>
-                    <option value="15">15 минут</option>
-                    <option value="30">30 минут</option>
-                    <option value="45">45 минут</option>
-                    <option value="60">1 час</option>
-                    <option value="90">1.5 часа</option>
-                </select>
-            </label>
-            
-            <label class="player__label">
-                <button class="player__volumeOnOff" aria-label="Включить/выключить звук"></button>
-                <input type="range" min="0" max="100" value="50" class="player__volume">
-            </label>
-        </div>
-        
-        <div class="ios-warning" id="ios-warning">
-            Для iOS: Нажмите кнопку воспроизведения для активации звука
-        </div>
+      <button
+        class="player__buttonPlayPause"
+        aria-label="Воспроизвести/пауза"
+      ></button>
+
+      <div class="player__select">
+        <img
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23333'%3E%3Cpath d='M10 20h4V4h-4v16zm-6 0h4v-8H4v8zM16 9v11h4V9h-4z'/%3E%3C/svg%3E"
+          alt="Иконка эквалайзера"
+          class="player__icon-eq"
+        />
+        <div class="player__line"></div>
+        <select class="player__dropdown" aria-label="Выбор звука">
+          <option value="rain_in_the_forest">Дождь в лесу</option>
+          <option value="the_sound_of_rain">Шум дождя</option>
+          <option value="glucophone">Глюкофон</option>
+          <option value="the_fire_in_the_oven">Огонь в печи</option>
+          <option value="fire_in_the_street">Огонь на улице</option>
+          <option value="the_noise_of_the_forest">Шум леса</option>
+          <option value="wave_noise">Шум волны</option>
+          <option value="the_sound_of_the_sea">Шум моря</option>
+          <option value="the_sound_of_the_spring">Звук родника</option>
+          <option value="crickets">Сверчки</option>
+          <option value="cicadas">Цикады</option>
+          <option value="in_the_cafe">В кафе</option>
+        </select>
+      </div>
+
+      <div class="player__controls">
+        <label class="player__label">
+          <span class="player__timerText">Таймер:</span>
+          <select class="player__timer">
+            <option value="0">Без таймера</option>
+            <option value="1">1 минута</option>
+            <option value="5">5 минут</option>
+            <option value="10">10 минут</option>
+            <option value="15">15 минут</option>
+            <option value="30">30 минут</option>
+            <option value="45">45 минут</option>
+            <option value="60">1 час</option>
+            <option value="90">1.5 часа</option>
+          </select>
+        </label>
+
+        <label class="player__label">
+          <button
+            class="player__volumeOnOff"
+            aria-label="Включить/выключить звук"
+          ></button>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value="50"
+            class="player__volume"
+          />
+        </label>
+      </div>
+
+      <div class="ios-warning" id="ios-warning">
+        Для iOS: Нажмите кнопку воспроизведения для активации звука
+      </div>
     </section>
 
-    <script>
-        class RelaxPlayer {
-            constructor() {
-                this.audio = new Audio();
-                this.isPlaying = false;
-                this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                this.currentSound = null;
-                this.timer = null;
-                this.volume = 0.5;
-                
-                this.initElements();
-                this.bindEvents();
-                this.setupAudio();
-                
-                if (this.isIOS) {
-                    this.showIOSWarning();
-                }
-            }
-            
-            initElements() {
-                this.playPauseBtn = document.querySelector('.player__buttonPlayPause');
-                this.dropdown = document.querySelector('.player__dropdown');
-                this.timerSelect = document.querySelector('.player__timer');
-                this.volumeBtn = document.querySelector('.player__volumeOnOff');
-                this.volumeSlider = document.querySelector('.player__volume');
-                this.iosWarning = document.getElementById('ios-warning');
-            }
-            
-            bindEvents() {
-                // Основные контролы
-                this.playPauseBtn.addEventListener('click', () => this.togglePlay());
-                this.dropdown.addEventListener('change', () => this.changeSound());
-                this.timerSelect.addEventListener('change', () => this.setTimer());
-                this.volumeBtn.addEventListener('click', () => this.toggleMute());
-                this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
-                
-                // Особые обработчики для iOS
-                if (this.isIOS) {
-                    document.addEventListener('touchstart', () => this.unlockAudio(), { once: true });
-                }
-                
-                // Обработчики для аудио
-                this.audio.addEventListener('loadeddata', () => this.onAudioLoaded());
-                this.audio.addEventListener('error', (e) => this.onAudioError(e));
-                this.audio.addEventListener('ended', () => this.onAudioEnded());
-            }
-            
-            setupAudio() {
-                this.audio.loop = true;
-                this.audio.volume = this.volume;
-                this.audio.preload = 'auto';
-                
-                // Загружаем первый звук
-                this.changeSound();
-            }
-            
-            unlockAudio() {
-                // Для iOS: создаем и воспроизводим пустой звук
-                const silentBuffer = new AudioContext();
-                const source = silentBuffer.createBufferSource();
-                source.buffer = silentBuffer.createBuffer(1, 1, 22050);
-                source.connect(silentBuffer.destination);
-                source.start(0);
-                
-                console.log('Аудио разблокировано для iOS');
-            }
-            
-            async togglePlay() {
-                if (!this.currentSound) return;
-                
-                try {
-                    if (this.isPlaying) {
-                        this.pause();
-                    } else {
-                        await this.play();
-                    }
-                } catch (error) {
-                    console.error('Ошибка воспроизведения:', error);
-                    if (this.isIOS) {
-                        this.showIOSWarning('Нажмите еще раз для воспроизведения');
-                    }
-                }
-            }
-            
-            async play() {
-                // Для iOS важно, чтобы воспроизведение начиналось по жесту
-                await this.audio.play();
-                this.isPlaying = true;
-                this.playPauseBtn.classList.add('playing');
-            }
-            
-            pause() {
-                this.audio.pause();
-                this.isPlaying = false;
-                this.playPauseBtn.classList.remove('playing');
-            }
-            
-            changeSound() {
-                const soundKey = this.dropdown.value;
-                this.currentSound = soundKey;
-                
-                // В реальном приложении здесь будут настоящие URL аудиофайлов
-                const soundUrls = {
-                    'rain_in_the_forest': 'sounds/rain_in_the_forest.mp3',
-                    'the_sound_of_rain': 'sounds/the_sound_of_rain.mp3',
-                    'glucophone': 'sounds/Glucophone_(sleep_melody)_01.mp3',
-                    'the_fire_in_the_oven': 'sounds/the_fire_in_the_oven.mp3',
-                    'fire_in_the_street': 'sounds/fire_in_the_street.mp3',
-                    'the_noise_of_the_forest': 'sounds/the_noise_of_the_forest.mp3',
-                    'wave_noise': 'sounds/wave_noise.mp3',
-                    'the_sound_of_the_sea': 'sounds/the_sound_of_the_sea.mp3',
-                    'the_sound_of_the_spring': 'sounds/the_sound_of_the_spring.mp3',
-                    'crickets': 'sounds/crickets.mp3',
-                    'cicadas': 'sounds/cicadas.mp3',
-                    'in_the_cafe': 'sounds/in_the_cafe.mp3'
-                };
-                
-                this.audio.src = soundUrls[soundKey];
-                
-                if (this.isPlaying) {
-                    this.pause();
-                }
-            }
-            
-            setTimer() {
-                const minutes = parseInt(this.timerSelect.value);
-                this.clearTimer();
-                
-                if (minutes > 0) {
-                    this.timer = setTimeout(() => {
-                        this.pause();
-                        this.timerSelect.value = '0';                        
-                    }, minutes * 60 * 1000);
-                }
-            }
-            
-            clearTimer() {
-                if (this.timer) {
-                    clearTimeout(this.timer);
-                    this.timer = null;
-                }
-            }
-            
-            toggleMute() {
-                this.audio.muted = !this.audio.muted;
-                this.volumeBtn.classList.toggle('muted', this.audio.muted);
-                
-                if (this.audio.muted) {
-                    this.volumeSlider.parentElement.classList.add('player__label_disabled');
-                } else {
-                    this.volumeSlider.parentElement.classList.remove('player__label_disabled');
-                }
-            }
-            
-            setVolume(value) {
-                this.volume = value / 100;
-                this.audio.volume = this.volume;
-                
-                // Сохраняем громкость в localStorage
-                localStorage.setItem('relaxPlayerVolume', value);
-            }
-            
-            onAudioLoaded() {
-                console.log('Аудио загружено:', this.currentSound);
-            }
-            
-            onAudioError(e) {
-                console.error('Ошибка загрузки аудио:', e);
-                alert('Ошибка загрузки звука. Попробуйте другой вариант.');
-            }
-            
-            onAudioEnded() {
-                // Для бесконечного цикла это не должно вызываться из-за loop=true
-                console.log('Аудио завершено');
-            }
-            
-            showIOSWarning(message = null) {
-                this.iosWarning.style.display = 'block';
-                if (message) {
-                    this.iosWarning.textContent = message;
-                }
-                
-                // Автоматически скрываем предупреждение через 5 секунд
-                setTimeout(() => {
-                    this.iosWarning.style.display = 'none';
-                }, 5000);
-            }
-            
-            // Восстановление настроек из localStorage
-            loadSettings() {
-                const savedVolume = localStorage.getItem('relaxPlayerVolume');
-                if (savedVolume) {
-                    this.volumeSlider.value = savedVolume;
-                    this.setVolume(savedVolume);
-                }
-            }
-        }
-        
-        // Инициализация плеера при загрузке страницы
-        document.addEventListener('DOMContentLoaded', () => {
-            const player = new RelaxPlayer();
-            player.loadSettings();
-            
-            // Глобальный экспорт для отладки
-            window.relaxPlayer = player;
-        });
-    </script>
-</body>
+    <script src="player.js"></script>
+  </body>
 </html>
