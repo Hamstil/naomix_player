@@ -69,59 +69,58 @@ class RelaxPlayer {
   // Функция плавного нарастания громкости
   fadeIn() {
     return new Promise((resolve) => {
-      if (this.fadeInterval) {
-        cancelAnimationFrame(this.fadeInterval);
-      }
-
-      const targetVolume = this.volume;
-      const startTime = Date.now();
-
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / this.fadeDuration, 1);
-
-        this.audio.volume = targetVolume * progress;
-
-        if (progress < 1) {
-          this.fadeInterval = requestAnimationFrame(animate);
-        } else {
-          this.fadeInterval = null;
-          resolve();
+        // Останавливаем предыдущее затухание, если оно есть
+        if (this.fadeInterval) {
+            clearInterval(this.fadeInterval);
         }
-      };
-
-      animate();
+        
+        const targetVolume = this.volume;
+        const step = targetVolume / (this.fadeDuration / 50); // 50ms интервал
+        let currentVolume = 0;
+        
+        this.audio.volume = currentVolume;
+        
+        this.fadeInterval = setInterval(() => {
+            currentVolume += step;
+            
+            if (currentVolume >= targetVolume) {
+                this.audio.volume = targetVolume;
+                clearInterval(this.fadeInterval);
+                this.fadeInterval = null;
+                resolve();
+            } else {
+                this.audio.volume = currentVolume;
+            }
+        }, 50);
     });
-  }
+}
 
   // Функция плавного затухания громкости
   fadeOut() {
     return new Promise((resolve) => {
-      if (this.fadeInterval) {
-        cancelAnimationFrame(this.fadeInterval);
-      }
-
-      const startVolume = this.audio.volume;
-      const startTime = Date.now();
-
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / this.fadeDuration, 1);
-
-        this.audio.volume = startVolume * (1 - progress);
-
-        if (progress < 1) {
-          this.fadeInterval = requestAnimationFrame(animate);
-        } else {
-          this.audio.volume = 0;
-          this.fadeInterval = null;
-          resolve();
+        // Останавливаем предыдущее нарастание, если оно есть
+        if (this.fadeInterval) {
+            clearInterval(this.fadeInterval);
         }
-      };
-
-      animate();
+        
+        const startVolume = this.audio.volume;
+        const step = startVolume / (this.fadeDuration / 50); // 50ms интервал
+        let currentVolume = startVolume;
+        
+        this.fadeInterval = setInterval(() => {
+            currentVolume -= step;
+            
+            if (currentVolume <= 0) {
+                this.audio.volume = 0;
+                clearInterval(this.fadeInterval);
+                this.fadeInterval = null;
+                resolve();
+            } else {
+                this.audio.volume = currentVolume;
+            }
+        }, 50);
     });
-  }
+}
 
   async togglePlay() {
     if (!this.currentSound) return;
