@@ -190,8 +190,16 @@ class RelaxPlayer {
 
     if (minutes > 0) {
       this.timer = setTimeout(async () => {
+        if (this.isIOS) {
+          this.audio.pause();
+          this.isPlaying = false;
+          this.playPauseBtn.classList.remove("playing");
+          return;
+        }
+        else {
         await this.pause();
-        this.timerSelect.value = "0";
+          this.timerSelect.value = "0";
+        }
       }, minutes * 60 * 1000);
     }
   }
