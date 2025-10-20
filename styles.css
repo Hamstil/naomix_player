@@ -29,19 +29,18 @@ body {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  border: none;
-  background: #4caf50;
+  border: 3px solid rgba(255, 255, 255);
+  background: rgba(0, 0, 0, 0.6);
   cursor: pointer;
   margin: 0 auto 30px;
   display: block;
   position: relative;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;  
 }
 
 .player__buttonPlayPause:hover {
   transform: scale(1.05);
-  background: #45a049;
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .player__buttonPlayPause::before {
@@ -50,11 +49,10 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-40%, -50%);
-  width: 0;
-  height: 0;
-  border-left: 20px solid white;
-  border-top: 12px solid transparent;
-  border-bottom: 12px solid transparent;
+  width: 30px;
+  height: 30px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="-10 0 100 100"><path d="M15 20 L65 50 L15 80 Z" fill="white" stroke="white" stroke-linejoin="round" stroke-width="15"/></svg>');
+  background-repeat: no-repeat;
 }
 
 .player__buttonPlayPause.playing::before {
@@ -62,8 +60,8 @@ body {
   height: 25px;
   border: none;
   background: white;
-  transform: translate(-50%, -50%);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  transform: translate(-110%, -50%);
+  border-radius: 3px;  
 }
 
 .player__buttonPlayPause.playing::after {
@@ -71,11 +69,11 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(50%, -50%);
+  transform: translate(40%, -50%);
   width: 8px;
   height: 25px;
   background: white;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  border-radius: 3px;
 }
 
 .player__select {
